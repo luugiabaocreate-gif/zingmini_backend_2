@@ -6,19 +6,18 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
 import postRoutes from "./routes/posts.js";
-import userRoutes from "./routes/users.js"; // hoặc bỏ dòng này nếu không dùng
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 
-// ✅ Cấu hình CORS để frontend trên Render truy cập được
+// ✅ Cấu hình CORS để frontend Render truy cập được
 app.use(
   cors({
     origin: [
-      "https://zingmini-frontend-2.onrender.com", // Frontend Render
-      "http://localhost:5500", // Cho test local
+      "https://zingmini-frontend-2.onrender.com", // frontend Render
+      "http://localhost:5500", // cho test local
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -36,17 +35,16 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Routes chính
+// ✅ Routes chính (chú ý prefix /api)
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
-app.use("/api/users", userRoutes);
 
-// ✅ Route kiểm tra backend hoạt động
+// ✅ Kiểm tra backend
 app.get("/", (req, res) => {
-  res.send("🎉 ZingMini backend đang hoạt động ngon lành!");
+  res.send("🎉 ZingMini backend đang chạy ngon lành trên Render!");
 });
 
-// ✅ Socket.io realtime
+// ✅ Socket.io
 const io = new Server(httpServer, {
   cors: {
     origin: [
@@ -65,8 +63,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Khởi động server
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server listening on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
