@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// ✅ Cấu hình CORS cho frontend (Render + localhost)
+// CORS
 app.use(
   cors({
     origin: [
@@ -26,7 +26,7 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Kết nối MongoDB
+// Connect MongoDB
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -35,16 +35,16 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Routes API
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
 
-// ✅ Kiểm tra backend hoạt động
+// Health check
 app.get("/", (req, res) => {
   res.send("🎉 Backend ZingMini đang hoạt động realtime!");
 });
 
-// ✅ Socket.io cấu hình cho Render
+// Socket.io server with polling fallback
 const io = new Server(httpServer, {
   cors: {
     origin: [
@@ -53,18 +53,48 @@ const io = new Server(httpServer, {
     ],
     methods: ["GET", "POST"],
   },
-  transports: ["websocket", "polling"], // Cho Render fallback
+  transports: ["websocket", "polling"],
 });
 
-// ✅ Sự kiện realtime
 io.on("connection", (socket) => {
   console.log("🔌 User connected:", socket.id);
 
-  // Lắng nghe tin nhắn từ client
+  // Chat
   socket.on("chat", (msg) => {
-    console.log("💬 New message:", msg);
-    // Gửi tin nhắn đến tất cả client
-    io.emit("chat", msg);
+    console.log("💬 chat:", msg);
+    io.emit("chat", { ...msg, ts: Date.now() });
+    // optionally create notification for others
+    io.emit("notification", {
+      type: "chat",
+      title: `${msg.user} vừa gửi tin nhắn`,
+      ts: Date.now(),
+    });
+  });
+
+  // Like
+  socket.on("like", (data) => {
+    // data: { postId, user }
+    console.log("👍 like:", data);
+    io.emit("like", { ...data, ts: Date.now() });
+    io.emit("notification", {
+      type: "like",
+      title: `${data.user} đã thích 1 bài viết`,
+      postId: data.postId,
+      ts: Date.now(),
+    });
+  });
+
+  // Comment
+  socket.on("comment", (data) => {
+    // data: { postId, user, text }
+    console.log("💬 comment:", data);
+    io.emit("comment", { ...data, ts: Date.now() });
+    io.emit("notification", {
+      type: "comment",
+      title: `${data.user} đã bình luận: "${String(data.text).slice(0, 30)}"`,
+      postId: data.postId,
+      ts: Date.now(),
+    });
   });
 
   socket.on("disconnect", () => {
@@ -72,7 +102,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Khởi động server
+// Run server
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
