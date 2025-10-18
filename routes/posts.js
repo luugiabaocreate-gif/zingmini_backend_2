@@ -1,66 +1,86 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 import Post from "../models/Post.js";
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
-import { fileURLToPath } from "url";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-// multer setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, "../uploads")),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, Date.now() + "-" + Math.round(Math.random() * 1e9) + ext);
+// Cấu hình Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
+
+// Cấu hình multer storage để lưu file trực tiếp lên Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "zingmini_uploads",
+    allowed_formats: ["jpg", "png", "jpeg", "gif", "mp4", "webm"],
+    transformation: [{ quality: "auto" }],
   },
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// auth middleware
-async function authFromHeader(req, res, next) {
-  try {
-    const auth = req.headers.authorization;
-    if (!auth) return res.status(401).json({ message: "Thiếu token" });
-    const token = auth.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(401).json({ message: "User không tồn tại" });
-    req.user = user;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: "Token không hợp lệ" });
-  }
-}
+const upload = multer({ storage });
 
-// get posts
+// ===================
+// GET ALL POSTS
+// ===================
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find()
-      .populate("user", "name email")
-      .sort({ createdAt: -1 });
-    res.json(posts);
+    const posts = await Post.find().populate("user").sort({ createdAt: -1 });
+    res.status(200).json(posts);
   } catch (err) {
-    console.error("get posts err", err);
-    res.status(500).json({ message: "Lỗi server" });
+    console.error("Lỗi tải bài viết:", err);
+    res.status(500).json({ message: "Lỗi server khi tải bài viết." });
   }
 });
 
-// create post
-router.post("/", authFromHeader, upload.single("image"), async (req, res) => {
+// ===================
+// CREATE POST
+// ===================
+router.post("/", verifyToken, upload.single("image"), async (req, res) => {
   try {
     const { content } = req.body;
-    const post = new Post({ user: req.user._id, content: content || "" });
-    if (req.file) post.image = `/uploads/${req.file.filename}`;
-    await post.save();
-    const p = await Post.findById(post._id).populate("user", "name email");
-    res.status(201).json(p);
+    const user = req.user.id;
+
+    const newPost = new Post({
+      user,
+      content,
+      image: req.file ? req.file.path : null, // đường dẫn Cloudinary
+    });
+
+    await newPost.save();
+    const populated = await newPost.populate("user");
+
+    res.status(201).json(populated);
   } catch (err) {
-    console.error("create post err", err);
-    res.status(500).json({ message: "Lỗi khi tạo bài" });
+    console.error("Lỗi tạo bài viết:", err);
+    res.status(500).json({ message: "Lỗi server khi đăng bài." });
+  }
+});
+
+// ===================
+// DELETE POST (tùy chọn)
+// ===================
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post)
+      return res.status(404).json({ message: "Không tìm thấy bài viết." });
+    if (post.user.toString() !== req.user.id)
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền xóa bài này." });
+
+    await post.deleteOne();
+    res.status(200).json({ message: "Đã xóa bài viết." });
+  } catch (err) {
+    console.error("Lỗi xóa bài viết:", err);
+    res.status(500).json({ message: "Lỗi server khi xóa bài viết." });
   }
 });
 
