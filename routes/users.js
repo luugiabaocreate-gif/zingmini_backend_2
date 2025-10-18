@@ -1,10 +1,9 @@
-// routes/users.js
 import express from "express";
 import User from "../models/User.js";
 
 const router = express.Router();
 
-// Lấy danh sách tất cả user
+// get all users
 router.get("/", async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -14,7 +13,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Lấy thông tin chi tiết 1 user
+// get user by id
 router.get("/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");

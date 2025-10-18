@@ -1,4 +1,3 @@
-// routes/posts.js
 import express from "express";
 import multer from "multer";
 import path from "path";
@@ -21,7 +20,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// helper auth middleware (simple)
+// auth middleware
 async function authFromHeader(req, res, next) {
   try {
     const auth = req.headers.authorization;
@@ -50,15 +49,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// create post (with optional image)
+// create post
 router.post("/", authFromHeader, upload.single("image"), async (req, res) => {
   try {
     const { content } = req.body;
     const post = new Post({ user: req.user._id, content: content || "" });
-    if (req.file) {
-      // serve via /uploads
-      post.image = `/uploads/${req.file.filename}`;
-    }
+    if (req.file) post.image = `/uploads/${req.file.filename}`;
     await post.save();
     const p = await Post.findById(post._id).populate("user", "name email");
     res.status(201).json(p);

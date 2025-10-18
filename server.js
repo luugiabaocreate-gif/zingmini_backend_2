@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
 import postRoutes from "./routes/posts.js";
+import usersRoutes from "./routes/users.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use("/uploads", express.static("uploads")); // serve images
 
 // Connect MongoDB
 mongoose
@@ -35,16 +37,17 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// API routes
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/users", usersRoutes);
 
 // Health check
-app.get("/", (req, res) => {
-  res.send("🎉 Backend ZingMini đang hoạt động realtime!");
-});
+app.get("/", (req, res) =>
+  res.send("🎉 Backend ZingMini đang hoạt động realtime!")
+);
 
-// Socket.io server with polling fallback
+// Socket.io
 const io = new Server(httpServer, {
   cors: {
     origin: [
@@ -59,11 +62,8 @@ const io = new Server(httpServer, {
 io.on("connection", (socket) => {
   console.log("🔌 User connected:", socket.id);
 
-  // Chat
   socket.on("chat", (msg) => {
-    console.log("💬 chat:", msg);
     io.emit("chat", { ...msg, ts: Date.now() });
-    // optionally create notification for others
     io.emit("notification", {
       type: "chat",
       title: `${msg.user} vừa gửi tin nhắn`,
@@ -71,10 +71,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Like
   socket.on("like", (data) => {
-    // data: { postId, user }
-    console.log("👍 like:", data);
     io.emit("like", { ...data, ts: Date.now() });
     io.emit("notification", {
       type: "like",
@@ -84,25 +81,21 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Comment
   socket.on("comment", (data) => {
-    // data: { postId, user, text }
-    console.log("💬 comment:", data);
     io.emit("comment", { ...data, ts: Date.now() });
     io.emit("notification", {
       type: "comment",
-      title: `${data.user} đã bình luận: "${String(data.text).slice(0, 30)}"`,
+      title: `${data.user} bình luận: "${String(data.text).slice(0, 30)}"`,
       postId: data.postId,
       ts: Date.now(),
     });
   });
 
-  socket.on("disconnect", () => {
-    console.log("❌ User disconnected:", socket.id);
-  });
+  socket.on("disconnect", () =>
+    console.log("❌ User disconnected:", socket.id)
+  );
 });
 
-// Run server
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
