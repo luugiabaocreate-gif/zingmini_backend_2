@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import postRoutes from "./routes/posts.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import commentRoutes from "./routes/comments.js";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/comments", commentRoutes);
 
 // ========== Socket.IO (with JWT auth) ==========
 const onlineUsers = new Map();
