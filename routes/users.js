@@ -13,4 +13,27 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+// === Cập nhật thông tin người dùng (tên, avatar, v.v.) ===
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, avatar } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { name, avatar },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.json(updatedUser);
+  } catch (err) {
+    console.error("Lỗi khi cập nhật user:", err);
+    res.status(500).json({ message: "Lỗi server khi cập nhật thông tin" });
+  }
+});
+
 export default router;
