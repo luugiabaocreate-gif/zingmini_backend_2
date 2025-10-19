@@ -42,7 +42,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
-import commentRoutes from "./routes/comments.js";
 app.use("/api/comments", commentRoutes);
 
 // ========== Socket.IO (with JWT auth) ==========

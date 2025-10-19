@@ -1,55 +1,57 @@
 // routes/comments.js
 import express from "express";
-import Post from "../models/Post.js";
-import { verifyToken } from "../middleware/auth.js";
+import Comment from "../models/Comment.js"; // model ở /models/Comment.js
+import Post from "../models/Post.js"; // nếu cần kiểm tra post tồn tại
+import { authenticate } from "../middleware/auth.js"; // nếu bạn có middleware auth
 
 const router = express.Router();
 
-// === Tạo bình luận cho bài viết ===
-router.post("/:postId", verifyToken, async (req, res) => {
+// Tạo comment mới
+router.post("/", async (req, res) => {
   try {
-    const { postId } = req.params;
-    const { text } = req.body;
-    const user = req.user;
+    const { postId, text } = req.body;
+    if (!postId || !text) return res.status(400).json({ message: "postId và text bắt buộc" });
 
-    if (!text || !text.trim()) {
-      return res.status(400).json({ message: "Nội dung bình luận không được để trống." });
-    }
+    // (tuỳ backend) optional: kiểm tra post tồn tại
+    // const post = await Post.findById(postId);
+    // if (!post) return res.status(404).json({ message: "Post not found" });
 
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: "Không tìm thấy bài viết." });
-
-    const newComment = {
-      user: user.id,
-      userName: user.name || "Người dùng",
-      text: text.trim(),
+    const comment = new Comment({
+      postId,
+      text,
+      user: req.user?._id || req.body.userId || null,
+      userName: req.user?.name || req.body.userName || "Ẩn danh",
       createdAt: new Date(),
-    };
-
-    post.comments.push(newComment);
-    await post.save();
-
-    res.status(201).json({
-      message: "Bình luận thành công!",
-      comment: newComment,
-      postId: post._id,
     });
+
+    await comment.save();
+    return res.status(201).json(comment);
   } catch (err) {
-    console.error("Add comment error:", err);
-    res.status(500).json({ message: "Lỗi server khi thêm bình luận." });
+    console.error("Create comment error:", err);
+    return res.status(500).json({ message: "Lỗi server khi tạo comment" });
   }
 });
 
-// === Lấy danh sách bình luận của bài viết ===
-router.get("/:postId", verifyToken, async (req, res) => {
+// Lấy comment theo post
+router.get("/post/:postId", async (req, res) => {
   try {
-    const { postId } = req.params;
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: "Không tìm thấy bài viết." });
-    res.json({ comments: post.comments || [] });
+    const comments = await Comment.find({ postId: req.params.postId }).sort({ createdAt: 1 }); // cũ->mới
+    return res.json(comments);
   } catch (err) {
-    console.error("Get comments error:", err);
-    res.status(500).json({ message: "Lỗi server khi lấy bình luận." });
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
+// Tuỳ chọn: xoá comment
+router.delete("/:id", async (req, res) => {
+  try {
+    const c = await Comment.findByIdAndDelete(req.params.id);
+    if (!c) return res.status(404).json({ message: "Không tìm thấy comment" });
+    return res.json({ message: "Đã xoá" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi server" });
   }
 });
 
