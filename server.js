@@ -1,34 +1,33 @@
+// server.js — ZingMini Backend FINAL (Realtime + Auth Fix)
 import express from "express";
+import http from "http";
+import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import cors from "cors";
-import { createServer } from "http";
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js";
 import postRoutes from "./routes/posts.js";
-import usersRoutes from "./routes/users.js";
+import messageRoutes from "./routes/messageRoutes.js";
 
 dotenv.config();
 
 const app = express();
-const httpServer = createServer(app);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
-// CORS
-app.use(
-  cors({
-    origin: [
-      "https://zingmini-frontend-2.onrender.com",
-      "http://localhost:5500",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
-
+// ========== Middlewares ==========
+app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static("uploads")); // serve images
+app.use("/uploads", express.static("uploads"));
 
-// Connect MongoDB
+// ========== MongoDB ==========
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -37,66 +36,62 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Routes
+// ========== Routes ==========
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
-app.use("/api/users", usersRoutes);
+app.use("/api/messages", messageRoutes);
 
-// Health check
-app.get("/", (req, res) =>
-  res.send("🎉 Backend ZingMini đang hoạt động realtime!")
-);
+// ========== Socket.IO (with JWT auth) ==========
+const onlineUsers = new Map();
 
-// Socket.io
-const io = new Server(httpServer, {
-  cors: {
-    origin: [
-      "https://zingmini-frontend-2.onrender.com",
-      "http://localhost:5500",
-    ],
-    methods: ["GET", "POST"],
-  },
-  transports: ["websocket", "polling"],
+io.use((socket, next) => {
+  try {
+    const token =
+      socket.handshake.auth?.token || socket.handshake.query?.token || null;
+    if (!token) return next(new Error("No token provided"));
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = decoded.id;
+    next();
+  } catch (err) {
+    console.error("Socket auth error:", err.message);
+    next(new Error("Authentication failed"));
+  }
 });
 
 io.on("connection", (socket) => {
-  console.log("🔌 User connected:", socket.id);
+  console.log(`🟢 ${socket.userId} connected (${socket.id})`);
+  onlineUsers.set(socket.userId, socket.id);
 
-  socket.on("chat", (msg) => {
-    io.emit("chat", { ...msg, ts: Date.now() });
-    io.emit("notification", {
-      type: "chat",
-      title: `${msg.user} vừa gửi tin nhắn`,
-      ts: Date.now(),
-    });
+  // Reaction realtime
+  socket.on("reaction", (data) => {
+    socket.broadcast.emit("reaction", data);
   });
 
-  socket.on("like", (data) => {
-    io.emit("like", { ...data, ts: Date.now() });
-    io.emit("notification", {
-      type: "like",
-      title: `${data.user} đã thích 1 bài viết`,
-      postId: data.postId,
-      ts: Date.now(),
-    });
+  // Private chat realtime
+  socket.on("private_chat", (msg) => {
+    const targetId = msg.to;
+    const targetSocket = onlineUsers.get(targetId);
+    if (targetSocket) {
+      io.to(targetSocket).emit("private_chat", msg);
+    }
+    // Gửi lại cho chính người gửi (để sync UI)
+    socket.emit("private_chat", msg);
   });
 
-  socket.on("comment", (data) => {
-    io.emit("comment", { ...data, ts: Date.now() });
-    io.emit("notification", {
-      type: "comment",
-      title: `${data.user} bình luận: "${String(data.text).slice(0, 30)}"`,
-      postId: data.postId,
-      ts: Date.now(),
-    });
+  socket.on("disconnect", () => {
+    console.log(`🔴 ${socket.userId} disconnected`);
+    onlineUsers.delete(socket.userId);
   });
-
-  socket.on("disconnect", () =>
-    console.log("❌ User disconnected:", socket.id)
-  );
 });
 
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// ========== Root ==========
+app.get("/", (req, res) => {
+  res.send("🚀 ZingMini Backend Final đang hoạt động tốt!");
+});
+
+// ========== Start ==========
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });

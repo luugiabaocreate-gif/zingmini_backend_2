@@ -2,85 +2,49 @@ import express from "express";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import Post from "../models/Post.js";
 import { verifyToken } from "../middleware/auth.js";
+import Post from "../models/Post.js";
 
 const router = express.Router();
 
-// Cấu hình Cloudinary
+// Cloudinary setup
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-// Cấu hình multer storage để lưu file trực tiếp lên Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: "zingmini_uploads",
-    allowed_formats: ["jpg", "png", "jpeg", "gif", "mp4", "webm"],
-    transformation: [{ quality: "auto" }],
-  },
+  params: { folder: "zingmini_uploads" },
 });
 
 const upload = multer({ storage });
 
-// ===================
-// GET ALL POSTS
-// ===================
+// Lấy tất cả bài đăng
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find().populate("user").sort({ createdAt: -1 });
-    res.status(200).json(posts);
+    const posts = await Post.find().populate("user", "name avatar").sort({ createdAt: -1 });
+    res.json(posts);
   } catch (err) {
-    console.error("Lỗi tải bài viết:", err);
-    res.status(500).json({ message: "Lỗi server khi tải bài viết." });
+    res.status(500).json({ message: "Lỗi khi tải bài viết" });
   }
 });
 
-// ===================
-// CREATE POST
-// ===================
+// Tạo bài đăng mới
 router.post("/", verifyToken, upload.single("image"), async (req, res) => {
   try {
-    const { content } = req.body;
-    const user = req.user.id;
-
     const newPost = new Post({
-      user,
-      content,
-      image: req.file ? req.file.path : null, // đường dẫn Cloudinary
+      user: req.user.id,
+      content: req.body.content,
+      image: req.file ? req.file.path : null,
     });
-
     await newPost.save();
-    const populated = await newPost.populate("user");
-
+    const populated = await newPost.populate("user", "name avatar");
     res.status(201).json(populated);
   } catch (err) {
-    console.error("Lỗi tạo bài viết:", err);
-    res.status(500).json({ message: "Lỗi server khi đăng bài." });
-  }
-});
-
-// ===================
-// DELETE POST (tùy chọn)
-// ===================
-router.delete("/:id", verifyToken, async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post)
-      return res.status(404).json({ message: "Không tìm thấy bài viết." });
-    if (post.user.toString() !== req.user.id)
-      return res
-        .status(403)
-        .json({ message: "Bạn không có quyền xóa bài này." });
-
-    await post.deleteOne();
-    res.status(200).json({ message: "Đã xóa bài viết." });
-  } catch (err) {
-    console.error("Lỗi xóa bài viết:", err);
-    res.status(500).json({ message: "Lỗi server khi xóa bài viết." });
+    console.error("Lỗi đăng bài:", err);
+    res.status(500).json({ message: "Không thể đăng bài" });
   }
 });
 
