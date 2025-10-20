@@ -1,9 +1,29 @@
 import express from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import User from "../models/User.js";
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// === Cấu hình Multer để upload ảnh ===
+const uploadDir = "uploads/";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `avatar_${Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// === Lấy danh sách người dùng ===
 router.get("/", verifyToken, async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -14,14 +34,21 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 // === Cập nhật thông tin người dùng (tên, avatar, v.v.) ===
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, avatar } = req.body;
+    const { name } = req.body;
+    let avatarUrl;
+
+    if (req.file) {
+      avatarUrl = `/uploads/${req.file.filename}`;
+    } else if (req.body.avatar) {
+      avatarUrl = req.body.avatar;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      { name, avatar },
+      { ...(name && { name }), ...(avatarUrl && { avatar: avatarUrl }) },
       { new: true }
     );
 

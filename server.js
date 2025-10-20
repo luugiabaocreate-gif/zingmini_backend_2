@@ -26,7 +26,22 @@ const io = new Server(server, {
 // ========== Middlewares ==========
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+app.use(cors());
+app.use(express.json());
+
+// === Cho phép truy cập ảnh trong thư mục /uploads (Render friendly) ===
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Nếu chưa có thư mục uploads thì tạo
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+app.use("/uploads", express.static(uploadDir));
 
 // ========== MongoDB ==========
 mongoose
