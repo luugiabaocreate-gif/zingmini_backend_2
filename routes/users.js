@@ -8,7 +8,7 @@ import { verifyToken } from "../middleware/auth.js";
 const router = express.Router();
 
 // === Cấu hình Multer để upload ảnh ===
-const uploadDir = "uploads/";
+const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const storage = multer.diskStorage({
@@ -55,24 +55,22 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     console.log("🧩 updateData:", updateData);
 
-    if (Object.keys(updateData).length === 0) {
+    if (Object.keys(updateData).length === 0)
       return res.status(400).json({ message: "Không có dữ liệu để cập nhật." });
-    }
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
     });
 
-    if (!updatedUser) {
+    if (!updatedUser)
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    }
 
     console.log("✅ Avatar updated:", updatedUser.avatar);
 
     res.json({
       success: true,
-      avatar: updatedUser.avatar || null,
-      user: updatedUser.toObject ? updatedUser.toObject() : updatedUser,
+      avatar: updatedUser.avatar,
+      user: updatedUser,
     });
   } catch (err) {
     console.error("❌ Lỗi khi cập nhật user:", err);

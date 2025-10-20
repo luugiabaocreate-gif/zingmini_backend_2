@@ -70,6 +70,9 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
+// === Cho phép truy cập ảnh trong thư mục /uploads ===
+app.use("/uploads", express.static("uploads"));
+
 // ========== Routes ==========
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
