@@ -56,10 +56,12 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
+    console.log("✅ Avatar updated:", updatedUser.avatar);
+
     res.json({
       success: true,
-      avatar: updatedUser.avatar, // <== TRẢ VỀ CHẮC CHẮN
-      user: updatedUser,
+      avatar: updatedUser.avatar,
+      user: updatedUser.toObject ? updatedUser.toObject() : updatedUser,
     });
   } catch (err) {
     console.error("Lỗi khi cập nhật user:", err);
