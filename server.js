@@ -46,6 +46,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // ✅ giúp multer đọc form-data chuẩn
 
 // === Cho phép truy cập ảnh trong thư mục /uploads (Render friendly) ===
 import path from "path";
@@ -69,9 +70,6 @@ mongoose
   })
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
-
-// === Cho phép truy cập ảnh trong thư mục /uploads ===
-app.use("/uploads", express.static("uploads"));
 
 // ========== Routes ==========
 app.use("/api/auth", authRoutes);

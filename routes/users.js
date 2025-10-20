@@ -44,12 +44,13 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     // ✅ Nếu có file upload thì lưu đường dẫn đúng tuyệt đối trên Render
     let avatarUrl = null;
-    if (req.file) {
-      // Render dùng HTTPS, nên cần trả về link đầy đủ:
+    if (req.file && req.file.filename) {
       const baseUrl = `${req.protocol}://${req.get("host")}`;
       avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
-    } else if (req.body.avatar) {
-      avatarUrl = req.body.avatar;
+      console.log("📸 Uploaded file:", req.file.filename);
+    } else {
+      console.warn("⚠️ Không nhận được file upload!", req.file);
+      if (req.body.avatar) avatarUrl = req.body.avatar;
     }
 
     const updateData = {};
