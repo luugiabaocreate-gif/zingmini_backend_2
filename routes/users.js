@@ -33,7 +33,7 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// === Cập nhật thông tin người dùng (tên, avatar, v.v.) ===
+// === Cập nhật avatar hoặc thông tin người dùng ===
 router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -58,7 +58,7 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     res.json({
       success: true,
-      avatar: updatedUser.avatar, // ✅ thêm dòng này
+      avatar: updatedUser.avatar, // <== TRẢ VỀ CHẮC CHẮN
       user: updatedUser,
     });
   } catch (err) {
