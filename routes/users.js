@@ -38,77 +38,30 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    let avatarUrl;
 
+    console.log("🧩 PUT /api/users/:id body:", req.body);
+    console.log("🧩 req.file:", req.file);
+
+    let avatarUrl = null;
     if (req.file) {
       avatarUrl = `/uploads/${req.file.filename}`;
     } else if (req.body.avatar) {
       avatarUrl = req.body.avatar;
     }
 
-    // === Cập nhật avatar hoặc thông tin người dùng ===
-    router.put(
-      "/:id",
-      verifyToken,
-      upload.single("avatar"),
-      async (req, res) => {
-        try {
-          const { id } = req.params;
-          const { name } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (avatarUrl) updateData.avatar = avatarUrl;
 
-          // ✅ Ghi log để kiểm tra
-          console.log("🧩 PUT /api/users/:id body:", req.body);
-          console.log("🧩 req.file:", req.file);
+    console.log("🧩 updateData:", updateData);
 
-          let avatarUrl = null;
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "Không có dữ liệu để cập nhật." });
+    }
 
-          // Nếu có file upload thì tạo đường dẫn public
-          if (req.file) {
-            avatarUrl = `/uploads/${req.file.filename}`;
-          } else if (req.body.avatar) {
-            avatarUrl = req.body.avatar; // cho phép cập nhật bằng URL trực tiếp
-          }
-
-          // Chuẩn bị dữ liệu cập nhật
-          const updateData = {};
-          if (name) updateData.name = name;
-          if (avatarUrl) updateData.avatar = avatarUrl;
-
-          console.log("🧩 updateData:", updateData);
-
-          // Nếu không có gì để cập nhật
-          if (Object.keys(updateData).length === 0) {
-            return res
-              .status(400)
-              .json({ message: "Không có dữ liệu để cập nhật." });
-          }
-
-          const updatedUser = await User.findByIdAndUpdate(id, updateData, {
-            new: true,
-          });
-
-          if (!updatedUser) {
-            return res
-              .status(404)
-              .json({ message: "Không tìm thấy người dùng" });
-          }
-
-          console.log("✅ Avatar updated:", updatedUser.avatar);
-
-          // ✅ Trả về dữ liệu đầy đủ, bao gồm avatar
-          res.json({
-            success: true,
-            avatar: updatedUser.avatar || null,
-            user: updatedUser.toObject ? updatedUser.toObject() : updatedUser,
-          });
-        } catch (err) {
-          console.error("❌ Lỗi khi cập nhật user:", err);
-          res
-            .status(500)
-            .json({ message: "Lỗi server khi cập nhật thông tin" });
-        }
-      }
-    );
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
@@ -118,11 +71,11 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     res.json({
       success: true,
-      avatar: updatedUser.avatar,
+      avatar: updatedUser.avatar || null,
       user: updatedUser.toObject ? updatedUser.toObject() : updatedUser,
     });
   } catch (err) {
-    console.error("Lỗi khi cập nhật user:", err);
+    console.error("❌ Lỗi khi cập nhật user:", err);
     res.status(500).json({ message: "Lỗi server khi cập nhật thông tin" });
   }
 });
