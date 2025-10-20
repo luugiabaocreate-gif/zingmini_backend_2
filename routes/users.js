@@ -42,9 +42,12 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     console.log("🧩 PUT /api/users/:id body:", req.body);
     console.log("🧩 req.file:", req.file);
 
+    // ✅ Nếu có file upload thì lưu đường dẫn đúng tuyệt đối trên Render
     let avatarUrl = null;
     if (req.file) {
-      avatarUrl = `/uploads/${req.file.filename}`;
+      // Render dùng HTTPS, nên cần trả về link đầy đủ:
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
     } else if (req.body.avatar) {
       avatarUrl = req.body.avatar;
     }
@@ -69,7 +72,7 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     res.json({
       success: true,
-      avatar: updatedUser.avatar,
+      avatar: updatedUser.avatar || null,
       user: updatedUser,
     });
   } catch (err) {
