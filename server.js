@@ -24,9 +24,28 @@ const io = new Server(server, {
 });
 
 // ========== Middlewares ==========
-app.use(cors());
-app.use(express.json());
-app.use(cors());
+import cors from "cors";
+
+const allowedOrigins = [
+  "https://zingmini-frontend-2.onrender.com", // domain frontend của bạn
+  "http://localhost:5500", // để test local
+  "http://127.0.0.1:5500",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed for this origin"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
 
 // === Cho phép truy cập ảnh trong thư mục /uploads (Render friendly) ===
