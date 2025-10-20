@@ -1,7 +1,7 @@
 // server.js — ZingMini Backend FINAL (Realtime + Auth Fix)
 import express from "express";
 import http from "http";
-import cors from "cors";
+import cors from "cors"; // ✅ chỉ import 1 lần ở đây thôi
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
@@ -24,11 +24,10 @@ const io = new Server(server, {
 });
 
 // ========== Middlewares ==========
-import cors from "cors";
 
 const allowedOrigins = [
-  "https://zingmini-frontend-2.onrender.com", // domain frontend của bạn
-  "http://localhost:5500", // để test local
+  "https://zingmini-frontend-2.onrender.com",
+  "http://localhost:5500",
   "http://127.0.0.1:5500",
 ];
 
