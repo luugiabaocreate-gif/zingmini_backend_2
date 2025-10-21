@@ -42,15 +42,15 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     console.log("🧩 PUT /api/users/:id body:", req.body);
     console.log("🧩 req.file:", req.file);
 
-    // ✅ Nếu có file upload thì lưu đường dẫn đúng tuyệt đối trên Render
     let avatarUrl = null;
+
+    // ✅ Nếu có file upload thì tạo URL tuyệt đối (Render yêu cầu có host)
     if (req.file && req.file.filename) {
       const baseUrl = `${req.protocol}://${req.get("host")}`;
       avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
-      console.log("📸 Uploaded file:", req.file.filename);
-    } else {
-      console.warn("⚠️ Không nhận được file upload!", req.file);
-      if (req.body.avatar) avatarUrl = req.body.avatar;
+      console.log("📸 Uploaded file:", avatarUrl);
+    } else if (req.body.avatar) {
+      avatarUrl = req.body.avatar;
     }
 
     const updateData = {};
@@ -64,16 +64,17 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
-    });
+    }).select("-password");
 
     if (!updatedUser)
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
     console.log("✅ Avatar updated:", updatedUser.avatar);
 
+    // ✅ TRẢ VỀ DỮ LIỆU RÕ RÀNG CHO FRONTEND
     res.json({
       success: true,
-      avatar: updatedUser.avatar || null,
+      avatar: updatedUser.avatar || avatarUrl,
       user: updatedUser,
     });
   } catch (err) {
