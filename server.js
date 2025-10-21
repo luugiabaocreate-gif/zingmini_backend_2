@@ -115,6 +115,35 @@ io.on("connection", (socket) => {
     socket.emit("private_chat", msg);
   });
 
+  // === VOICE CALL SIGNALING (NEW) ===
+  socket.on("call-offer", (data) => {
+    const targetSocket = onlineUsers.get(data.to);
+    if (targetSocket) {
+      io.to(targetSocket).emit("call-offer", data);
+    }
+  });
+
+  socket.on("call-answer", (data) => {
+    const targetSocket = onlineUsers.get(data.to);
+    if (targetSocket) {
+      io.to(targetSocket).emit("call-answer", data);
+    }
+  });
+
+  socket.on("call-ice", (data) => {
+    const targetSocket = onlineUsers.get(data.to);
+    if (targetSocket) {
+      io.to(targetSocket).emit("call-ice", data);
+    }
+  });
+
+  socket.on("call-end", (data) => {
+    const targetSocket = onlineUsers.get(data.to);
+    if (targetSocket) {
+      io.to(targetSocket).emit("call-end", data);
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log(`🔴 ${socket.userId} disconnected`);
     onlineUsers.delete(socket.userId);
