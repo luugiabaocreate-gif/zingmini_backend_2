@@ -33,6 +33,19 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+// === Lấy thông tin 1 người dùng (GET /api/users/:id) ===
+router.get("/:id", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("❌ Lỗi khi lấy user:", err);
+    res.status(500).json({ message: "Lỗi server khi lấy thông tin user" });
+  }
+});
+
 // === Cập nhật avatar hoặc thông tin người dùng ===
 router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
   try {
@@ -71,7 +84,6 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     console.log("✅ Avatar updated:", updatedUser.avatar);
 
-    // ✅ TRẢ VỀ DỮ LIỆU RÕ RÀNG CHO FRONTEND
     res.json({
       success: true,
       avatar: updatedUser.avatar || avatarUrl,
