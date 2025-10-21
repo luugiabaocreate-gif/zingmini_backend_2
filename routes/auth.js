@@ -23,7 +23,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// === Đăng nhập ===
+// Đăng nhập
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -33,18 +33,23 @@ router.post("/login", async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ message: "Sai mật khẩu" });
 
+    // === Chuẩn hóa avatar ===
+    let avatarUrl = user.avatar;
+    if (avatarUrl && avatarUrl.startsWith("/")) {
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      avatarUrl = `${baseUrl}${avatarUrl}`;
+    } else if (avatarUrl && avatarUrl.startsWith("http://")) {
+      avatarUrl = avatarUrl.replace("http://", "https://");
+    }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-    // ✅ Luôn lấy lại user mới nhất từ DB (đảm bảo avatar cập nhật)
-    const freshUser = await User.findById(user._id).select("-password");
-
     res.json({
       token,
       user: {
-        _id: freshUser._id,
-        name: freshUser.name,
-        email: freshUser.email,
-        avatar: freshUser.avatar || "",
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: avatarUrl || `https://i.pravatar.cc/150?u=${user._id}`,
       },
     });
   } catch (err) {
