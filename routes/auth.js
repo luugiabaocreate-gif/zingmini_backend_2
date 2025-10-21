@@ -27,11 +27,15 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    let user = await User.findOne({ email });
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ message: "Sai mật khẩu" });
+
+    // 🧩 Refresh user mới nhất từ DB (đảm bảo avatar mới)
+    user = await User.findById(user._id).select("-password");
 
     // === Chuẩn hóa avatar ===
     let avatarUrl = user.avatar;
@@ -42,7 +46,9 @@ router.post("/login", async (req, res) => {
       avatarUrl = avatarUrl.replace("http://", "https://");
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
     res.json({
       token,
       user: {
