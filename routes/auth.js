@@ -28,15 +28,12 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ message: "Sai mật khẩu" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     // ✅ Luôn lấy lại user mới nhất từ DB (đảm bảo avatar cập nhật)
     const freshUser = await User.findById(user._id).select("-password");
