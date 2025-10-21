@@ -5,7 +5,7 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-// Đăng ký
+// === Đăng ký ===
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -23,20 +23,32 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Đăng nhập
+// === Đăng nhập ===
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ message: "Sai mật khẩu" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // ✅ Luôn lấy lại user mới nhất từ DB (đảm bảo avatar cập nhật)
+    const freshUser = await User.findById(user._id).select("-password");
+
     res.json({
       token,
-      user: { _id: user._id, name: user.name, email: user.email, avatar: user.avatar },
+      user: {
+        _id: freshUser._id,
+        name: freshUser.name,
+        email: freshUser.email,
+        avatar: freshUser.avatar || "",
+      },
     });
   } catch (err) {
     console.error("Đăng nhập lỗi:", err);

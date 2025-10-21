@@ -12,9 +12,7 @@ const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `avatar_${Date.now()}${ext}`);
@@ -39,16 +37,16 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
 
-    console.log("🧩 PUT /api/users/:id body:", req.body);
-    console.log("🧩 req.file:", req.file);
+    console.log("📩 PUT /api/users/:id body:", req.body);
+    console.log("📸 req.file:", req.file);
 
     let avatarUrl = null;
 
-    // ✅ Nếu có file upload thì tạo URL tuyệt đối (Render yêu cầu có host)
+    // ✅ Nếu có file upload thì tạo HTTPS URL tuyệt đối (Render yêu cầu)
     if (req.file && req.file.filename) {
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const baseUrl = `https://${req.get("host")}`; // ép luôn HTTPS
       avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
-      console.log("📸 Uploaded file:", avatarUrl);
+      console.log("✅ Uploaded avatar:", avatarUrl);
     } else if (req.body.avatar) {
       avatarUrl = req.body.avatar;
     }
@@ -56,8 +54,6 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     const updateData = {};
     if (name) updateData.name = name;
     if (avatarUrl) updateData.avatar = avatarUrl;
-
-    console.log("🧩 updateData:", updateData);
 
     if (Object.keys(updateData).length === 0)
       return res.status(400).json({ message: "Không có dữ liệu để cập nhật." });
@@ -69,12 +65,12 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     if (!updatedUser)
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
-    console.log("✅ Avatar updated:", updatedUser.avatar);
+    console.log("🎉 Avatar updated OK:", updatedUser.avatar);
 
-    // ✅ TRẢ VỀ DỮ LIỆU RÕ RÀNG CHO FRONTEND
+    // ✅ Trả kết quả rõ ràng cho frontend
     res.json({
       success: true,
-      avatar: updatedUser.avatar || avatarUrl,
+      avatar: updatedUser.avatar,
       user: updatedUser,
     });
   } catch (err) {
