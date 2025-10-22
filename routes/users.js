@@ -94,5 +94,21 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi cập nhật thông tin" });
   }
 });
-
+// === [BỔ SUNG] Endpoint an toàn để frontend fetch avatar mới nhất ===
+// Cho phép truy cập public để frontend (F5 / load lại trang) vẫn đồng bộ được avatar
+router.get("/public/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    res.json({
+      success: true,
+      user,
+      avatar: user.avatar,
+    });
+  } catch (err) {
+    console.error("❌ Lỗi khi tải user công khai:", err);
+    res.status(500).json({ message: "Lỗi server khi tải thông tin user" });
+  }
+});
 export default router;
