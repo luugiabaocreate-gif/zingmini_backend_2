@@ -39,7 +39,8 @@ router.get("/:id", verifyToken, async (req, res) => {
     const user = await User.findById(req.params.id).select("-password");
     if (!user)
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    // === Bổ sung tự động nối domain cho avatar nếu có ===
+
+    // === Chuẩn hoá avatar trước khi gửi về ===
     let avatarUrl = user.avatar;
     if (avatarUrl) {
       if (avatarUrl.startsWith("/")) {
@@ -55,7 +56,12 @@ router.get("/:id", verifyToken, async (req, res) => {
 
     res.json({
       success: true,
-      user: { ...user.toObject(), avatar: avatarUrl },
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: avatarUrl,
+      },
     });
   } catch (err) {
     console.error("❌ Lỗi khi lấy user:", err);
