@@ -39,7 +39,24 @@ router.get("/:id", verifyToken, async (req, res) => {
     const user = await User.findById(req.params.id).select("-password");
     if (!user)
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    res.json({ success: true, user });
+    // === Bổ sung tự động nối domain cho avatar nếu có ===
+    let avatarUrl = user.avatar;
+    if (avatarUrl) {
+      if (avatarUrl.startsWith("/")) {
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+        avatarUrl = `${baseUrl}${avatarUrl}`;
+      } else if (avatarUrl.startsWith("http://")) {
+        avatarUrl = avatarUrl.replace("http://", "https://");
+      }
+    } else {
+      // fallback nếu user chưa có avatar
+      avatarUrl = `https://i.pravatar.cc/150?u=${user._id}`;
+    }
+
+    res.json({
+      success: true,
+      user: { ...user.toObject(), avatar: avatarUrl },
+    });
   } catch (err) {
     console.error("❌ Lỗi khi lấy user:", err);
     res.status(500).json({ message: "Lỗi server khi lấy thông tin user" });
