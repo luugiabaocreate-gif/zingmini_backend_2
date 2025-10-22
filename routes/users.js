@@ -59,9 +59,9 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
 
     // ✅ Nếu có file upload thì tạo URL tuyệt đối (Render yêu cầu có host)
     if (req.file && req.file.filename) {
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
-      avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
-      console.log("📸 Uploaded file:", avatarUrl);
+      // ✅ Lưu path tương đối để không bị lỗi domain khi deploy
+      avatarUrl = `/uploads/${req.file.filename}`;
+      console.log("📸 Uploaded file path:", avatarUrl);
     } else if (req.body.avatar) {
       avatarUrl = req.body.avatar;
     }
