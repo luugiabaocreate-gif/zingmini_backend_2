@@ -36,13 +36,23 @@ router.get("/", verifyToken, async (req, res) => {
 // === Lấy thông tin 1 người dùng (GET /api/users/:id) ===
 router.get("/:id", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user)
-      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    const { id } = req.params;
 
-    // === Chuẩn hoá avatar trước khi gửi về ===
-    let avatarUrl = user.avatar;
-    if (avatarUrl) {
+    // Kiểm tra ID hợp lệ (tránh MongoDB nổ lỗi)
+    if (!id || id.length !== 24) {
+      return res.status(400).json({ message: "ID người dùng không hợp lệ" });
+    }
+
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    // Chuẩn hoá avatar
+    let avatarUrl = "";
+    if (user.avatar && typeof user.avatar === "string") {
+      avatarUrl = user.avatar;
+
       if (avatarUrl.startsWith("/")) {
         const baseUrl = `${req.protocol}://${req.get("host")}`;
         avatarUrl = `${baseUrl}${avatarUrl}`;
@@ -50,10 +60,10 @@ router.get("/:id", verifyToken, async (req, res) => {
         avatarUrl = avatarUrl.replace("http://", "https://");
       }
     } else {
-      // fallback nếu user chưa có avatar
       avatarUrl = `https://i.pravatar.cc/150?u=${user._id}`;
     }
 
+    // Trả về dữ liệu hoàn chỉnh
     res.json({
       success: true,
       user: {
@@ -64,7 +74,7 @@ router.get("/:id", verifyToken, async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("❌ Lỗi khi lấy user:", err);
+    console.error("❌ Lỗi khi lấy thông tin user:", err);
     res.status(500).json({ message: "Lỗi server khi lấy thông tin user" });
   }
 });
