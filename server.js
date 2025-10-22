@@ -82,12 +82,6 @@ app.use("/api/upload", uploadRoutes);
 
 // ========== Socket.IO (with JWT auth) ==========
 const onlineUsers = new Map();
-// 🟢 Danh sách user online realtime (tên hiển thị)
-let onlineNames = new Set();
-
-function broadcastOnlineUsers() {
-  io.emit("online_users", Array.from(onlineNames));
-}
 
 io.use((socket, next) => {
   try {
@@ -106,11 +100,6 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   console.log(`🟢 ${socket.userId} connected (${socket.id})`);
   onlineUsers.set(socket.userId, socket.id);
-  // Khi client báo online (gửi kèm tên)
-  socket.on("user_online", (data) => {
-    if (data?.name) onlineNames.add(data.name);
-    broadcastOnlineUsers();
-  });
 
   // Reaction realtime
   socket.on("reaction", (data) => {
@@ -160,13 +149,6 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`🔴 ${socket.userId} disconnected`);
     onlineUsers.delete(socket.userId);
-    // Xóa khỏi danh sách online
-    for (let name of onlineNames) {
-      if (name === socket.userName) {
-        onlineNames.delete(name);
-      }
-    }
-    broadcastOnlineUsers();
   });
 });
 
