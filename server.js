@@ -62,6 +62,15 @@ const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 app.use("/uploads", express.static(uploadDir));
+// ✅ Fix Render static path (cho phép public toàn bộ /uploads)
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"), {
+    setHeaders: (res) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    },
+  })
+);
 
 // ========== MongoDB ==========
 mongoose
