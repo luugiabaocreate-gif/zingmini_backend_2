@@ -38,13 +38,15 @@ router.post("/login", async (req, res) => {
     user = await User.findById(user._id).select("-password");
 
     // === Chuẩn hóa avatar ===
-    let avatarUrl = user.avatar;
-    if (avatarUrl && avatarUrl.startsWith("/")) {
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
-      avatarUrl = `${baseUrl}${avatarUrl}`;
-    } else if (avatarUrl && avatarUrl.startsWith("http://")) {
-      avatarUrl = avatarUrl.replace("http://", "https://");
-    }
+let avatarUrl = user.avatar;
+if (avatarUrl && avatarUrl.startsWith("/")) {
+  // Giữ nguyên đường dẫn tương đối
+  avatarUrl = user.avatar;
+} else if (avatarUrl && avatarUrl.startsWith("http://")) {
+  avatarUrl = avatarUrl.replace("http://", "https://");
+} else if (!avatarUrl) {
+  avatarUrl = `/uploads/default_avatar.png`; // fallback mặc định
+}
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
