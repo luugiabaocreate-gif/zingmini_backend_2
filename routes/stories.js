@@ -2,42 +2,52 @@ import express from "express";
 import multer from "multer";
 import { verifyToken } from "../middleware/auth.js";
 import Story from "../models/Story.js";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const router = express.Router();
 
+// === Tạo thư mục uploads/stories tuyệt đối theo __dirname ===
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadBase = path.join(__dirname, "../uploads/stories");
+if (!fs.existsSync(uploadBase)) fs.mkdirSync(uploadBase, { recursive: true });
+
+// === Multer config ===
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = "uploads/stories";
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    cb(null, uploadBase);
   },
   filename: (req, file, cb) => {
     const unique = Date.now() + "_" + file.originalname;
     cb(null, unique);
   },
 });
-
 const upload = multer({ storage });
 
-// POST /api/stories
+// === POST /api/stories ===
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
-  console.log("📹 Story upload:", req.file);
+  console.log("📩 Upload story request:", req.body);
+  console.log("📂 File info:", req.file);
 
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "Thiếu file story!" });
+      return res.status(400).json({ message: "Không có file story!" });
     }
-    const type = req.file.mimetype.startsWith("video") ? "video" : "image";
+
+    const isVideo = req.file.mimetype.startsWith("video");
     const fileUrl = `/uploads/stories/${req.file.filename}`;
+
     const story = await Story.create({
       userId: req.user.id,
       mediaUrl: fileUrl,
-      type,
+      type: isVideo ? "video" : "image",
       createdAt: new Date(),
-      expireAt: Date.now() + 24 * 60 * 60 * 1000, // auto-expire 24h
+      expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // hết hạn sau 24h
     });
+
+    console.log("✅ Story created:", story);
     res.json({ success: true, story });
   } catch (err) {
     console.error("🔥 Lỗi khi tải story:", err);
@@ -47,7 +57,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   }
 });
 
-// GET /api/stories
+// === GET /api/stories ===
 router.get("/", async (req, res) => {
   try {
     const stories = await Story.find()

@@ -60,11 +60,15 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Nếu chưa có thư mục uploads thì tạo
+// Đảm bảo tồn tại thư mục uploads (và con của nó)
 const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const storyDir = path.join(uploadDir, "stories");
 
-app.use("/uploads", express.static(uploadDir));
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+if (!fs.existsSync(storyDir)) fs.mkdirSync(storyDir);
+
+// ⚙️ Cho phép Express phục vụ tĩnh từ thư mục uploads
+app.use("/uploads", express.static(uploadDir, { fallthrough: true }));
 
 // ========== MongoDB ==========
 mongoose
