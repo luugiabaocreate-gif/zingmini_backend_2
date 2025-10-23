@@ -28,8 +28,8 @@ const upload = multer({ storage });
 
 // === POST /api/stories ===
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
-  console.log("📩 Upload story request:", req.body);
-  console.log("📂 File info:", req.file);
+  console.log("🎬 Story upload body:", req.body);
+  console.log("🎞 Uploaded story file:", req.file);
 
   try {
     if (!req.file) {

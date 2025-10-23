@@ -37,7 +37,16 @@ router.get("/", async (req, res) => {
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   console.log("📩 New post body:", req.body);
   console.log("📎 Uploaded file:", req.file);
-
+  if (req.file) {
+    console.log("📸 File upload info:", {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path,
+    });
+  } else {
+    console.log("⚠️ Không có file upload");
+  }
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
@@ -50,14 +59,14 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     const newPost = new Post({
       user: req.user.id,
       content: req.body.content || "",
-      image: req.file ? req.file.path : null,
+      mediaUrl: req.file ? req.file.path : null,
     });
 
     await newPost.save();
     const populated = await newPost.populate("user", "name avatar");
     res.status(201).json(populated);
   } catch (err) {
-    console.error("🔥 Lỗi đăng bài:", err);
+    console.error("🔥 Lỗi đăng bài:", err.message, err.stack);
     res.status(500).json({ message: "Không thể đăng bài", error: err.message });
   }
 });

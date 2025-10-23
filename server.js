@@ -61,11 +61,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Đảm bảo tồn tại thư mục uploads (và con của nó)
-const uploadDir = path.join(__dirname, "uploads");
+// Render chỉ cho phép ghi file trong /tmp
+const uploadDir = process.env.NODE_ENV === "production"
+  ? path.join("/tmp", "uploads")
+  : path.join(__dirname, "uploads");
 const storyDir = path.join(uploadDir, "stories");
 
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-if (!fs.existsSync(storyDir)) fs.mkdirSync(storyDir);
+// Đảm bảo tồn tại thư mục
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+if (!fs.existsSync(storyDir)) fs.mkdirSync(storyDir, { recursive: true });
+
+// Cho phép Express phục vụ file từ /uploads (Render-friendly)
+app.use("/uploads", express.static(uploadDir, { fallthrough: true }));
 
 // ⚙️ Cho phép Express phục vụ tĩnh từ thư mục uploads
 app.use("/uploads", express.static(uploadDir, { fallthrough: true }));
