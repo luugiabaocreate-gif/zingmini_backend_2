@@ -8,19 +8,21 @@ import { verifyToken } from "../middleware/auth.js";
 const router = express.Router();
 
 // === Cấu hình Multer để upload ảnh ===
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+// === SỬA PHẦN UPLOADDIR THÀNH CÙNG THƯ MỤC VỚI SERVER ===
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadDir = path.join(__dirname, "..", "uploads"); // routes/.. -> project root/uploads
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `avatar_${Date.now()}${ext}`);
   },
 });
-
 const upload = multer({ storage });
 
 // === Lấy danh sách người dùng ===

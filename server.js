@@ -100,6 +100,9 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   console.log(`🟢 ${socket.userId} connected (${socket.id})`);
   onlineUsers.set(socket.userId, socket.id);
+  // Gửi danh sách user online cho tất cả client (mảng id)
+  io.emit("online_users", Array.from(onlineUsers.keys()));
+
 
   // Reaction realtime
   socket.on("reaction", (data) => {
@@ -149,6 +152,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`🔴 ${socket.userId} disconnected`);
     onlineUsers.delete(socket.userId);
+      // Cập nhật danh sách online khi user rời
+  io.emit("online_users", Array.from(onlineUsers.keys()));
+
   });
 });
 
