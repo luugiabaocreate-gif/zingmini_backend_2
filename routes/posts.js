@@ -24,7 +24,9 @@ const upload = multer({ storage });
 // Lấy tất cả bài đăng
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find().populate("user", "name avatar").sort({ createdAt: -1 });
+    const posts = await Post.find()
+      .populate("user", "name avatar")
+      .sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi tải bài viết" });
@@ -33,10 +35,10 @@ router.get("/", async (req, res) => {
 
 // Tạo bài đăng mới
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
-  try {
-    console.log("📩 New post body:", req.body);
-console.log("📎 Uploaded file:", req.file);
+  console.log("📩 New post body:", req.body);
+  console.log("📎 Uploaded file:", req.file);
 
+  try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
     }

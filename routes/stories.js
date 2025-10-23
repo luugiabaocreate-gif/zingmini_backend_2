@@ -23,9 +23,9 @@ const upload = multer({ storage });
 
 // POST /api/stories
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
-  try {
-    console.log("📹 Story upload:", req.file);
+  console.log("📹 Story upload:", req.file);
 
+  try {
     if (!req.file) {
       return res.status(400).json({ message: "Thiếu file story!" });
     }
@@ -41,7 +41,9 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     res.json({ success: true, story });
   } catch (err) {
     console.error("🔥 Lỗi khi tải story:", err);
-    res.status(500).json({ message: "Không thể tải story", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Không thể tải story", error: err.message });
   }
 });
 
