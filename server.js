@@ -12,7 +12,7 @@ import postRoutes from "./routes/posts.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import commentRoutes from "./routes/comments.js";
 import uploadRoutes from "./routes/upload.js";
-import storyRoutes from "./routes/story.js";
+import storyRoutes from "./routes/stories.js";
 
 dotenv.config();
 
@@ -80,7 +80,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/upload", uploadRoutes);
-app.use("/api/story", storyRoutes);
+app.use("/api/stories", storyRoutes);
 
 // ========== Socket.IO (with JWT auth) ==========
 const onlineUsers = new Map();
@@ -105,7 +105,6 @@ io.on("connection", (socket) => {
   // Gửi danh sách user online cho tất cả client (mảng id)
   io.emit("online_users", Array.from(onlineUsers.keys()));
 
-
   // Reaction realtime
   socket.on("reaction", (data) => {
     socket.broadcast.emit("reaction", data);
@@ -122,8 +121,8 @@ io.on("connection", (socket) => {
     socket.emit("private_chat", msg);
   });
   socket.on("new-story", (story) => {
-  socket.broadcast.emit("new-story", story);
-});
+    socket.broadcast.emit("new-story", story);
+  });
   // === VOICE CALL SIGNALING (NEW) ===
   socket.on("call-offer", (data) => {
     const targetSocket = onlineUsers.get(data.to);
@@ -156,9 +155,8 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`🔴 ${socket.userId} disconnected`);
     onlineUsers.delete(socket.userId);
-      // Cập nhật danh sách online khi user rời
-  io.emit("online_users", Array.from(onlineUsers.keys()));
-
+    // Cập nhật danh sách online khi user rời
+    io.emit("online_users", Array.from(onlineUsers.keys()));
   });
 });
 

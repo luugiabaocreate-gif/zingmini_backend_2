@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // === POST /api/story/upload ===
-router.post("/upload", verifyToken, upload.single("media"), async (req, res) => {
+router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   try {
     const fileUrl = `/uploads/stories/${req.file.filename}`;
     const type = req.file.mimetype.startsWith("video") ? "video" : "image";

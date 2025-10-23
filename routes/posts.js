@@ -32,7 +32,7 @@ router.get("/", async (req, res) => {
 });
 
 // Tạo bài đăng mới
-router.post("/", verifyToken, upload.single("image"), async (req, res) => {
+router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   try {
     const newPost = new Post({
       user: req.user.id,
