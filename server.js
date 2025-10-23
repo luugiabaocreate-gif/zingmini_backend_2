@@ -13,6 +13,8 @@ import messageRoutes from "./routes/messageRoutes.js";
 import commentRoutes from "./routes/comments.js";
 import uploadRoutes from "./routes/upload.js";
 import storyRoutes from "./routes/stories.js";
+process.on("uncaughtException", (err) => console.error("🔥 Uncaught:", err));
+process.on("unhandledRejection", (err) => console.error("🔥 Unhandled:", err));
 
 dotenv.config();
 

@@ -24,6 +24,8 @@ const upload = multer({ storage });
 // POST /api/stories
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   try {
+    console.log("📹 Story upload:", req.file);
+
     if (!req.file) {
       return res.status(400).json({ message: "Thiếu file story!" });
     }

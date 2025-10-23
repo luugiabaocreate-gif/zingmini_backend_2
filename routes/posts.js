@@ -34,6 +34,9 @@ router.get("/", async (req, res) => {
 // Tạo bài đăng mới
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   try {
+    console.log("📩 New post body:", req.body);
+console.log("📎 Uploaded file:", req.file);
+
     if (!req.user?.id) {
       return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
     }
