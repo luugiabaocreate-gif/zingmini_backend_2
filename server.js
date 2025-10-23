@@ -12,6 +12,7 @@ import postRoutes from "./routes/posts.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import commentRoutes from "./routes/comments.js";
 import uploadRoutes from "./routes/upload.js";
+import storyRoutes from "./routes/story.js";
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/story", storyRoutes);
 
 // ========== Socket.IO (with JWT auth) ==========
 const onlineUsers = new Map();
@@ -119,7 +121,9 @@ io.on("connection", (socket) => {
     // Gửi lại cho chính người gửi (để sync UI)
     socket.emit("private_chat", msg);
   });
-
+  socket.on("new-story", (story) => {
+  socket.broadcast.emit("new-story", story);
+});
   // === VOICE CALL SIGNALING (NEW) ===
   socket.on("call-offer", (data) => {
     const targetSocket = onlineUsers.get(data.to);
