@@ -1,13 +1,12 @@
 import express from "express";
 import multer from "multer";
-import Story from "../models/Story.js";
 import { verifyToken } from "../middleware/auth.js";
+import Story from "../models/Story.js";
 import path from "path";
 import fs from "fs";
 
 const router = express.Router();
 
-// cấu hình multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = "uploads/stories";
@@ -22,24 +21,29 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// === POST /api/story/upload ===
+// POST /api/stories
 router.post("/", verifyToken, upload.single("file"), async (req, res) => {
   try {
-    const fileUrl = `/uploads/stories/${req.file.filename}`;
+    if (!req.file) {
+      return res.status(400).json({ message: "Thiếu file story!" });
+    }
     const type = req.file.mimetype.startsWith("video") ? "video" : "image";
+    const fileUrl = `/uploads/stories/${req.file.filename}`;
     const story = await Story.create({
       userId: req.user.id,
       mediaUrl: fileUrl,
       type,
+      createdAt: new Date(),
+      expireAt: Date.now() + 24 * 60 * 60 * 1000, // auto-expire 24h
     });
     res.json({ success: true, story });
   } catch (err) {
-    console.error("Error uploading story:", err);
-    res.status(500).json({ message: "Lỗi tải story" });
+    console.error("🔥 Lỗi khi tải story:", err);
+    res.status(500).json({ message: "Không thể tải story", error: err.message });
   }
 });
 
-// === GET /api/story ===
+// GET /api/stories
 router.get("/", async (req, res) => {
   try {
     const stories = await Story.find()
@@ -47,7 +51,8 @@ router.get("/", async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(stories);
   } catch (err) {
-    res.status(500).json({ message: "Lỗi lấy story" });
+    console.error("🔥 Lỗi lấy story:", err);
+    res.status(500).json({ message: "Không thể lấy story" });
   }
 });
 
