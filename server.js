@@ -4,6 +4,7 @@ import http from "http";
 import cors from "cors"; // ✅ chỉ import 1 lần ở đây thôi
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import Short from "./models/Short.js";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
@@ -13,6 +14,27 @@ import messageRoutes from "./routes/messageRoutes.js";
 import commentRoutes from "./routes/comments.js";
 import uploadRoutes from "./routes/upload.js";
 import storyRoutes from "./routes/stories.js";
+// === VIDEO STORAGE FOR SHORTS ===
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import multer from "multer";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storageVideo = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "zingmini_shorts",
+    resource_type: "video" // 👈 Quan trọng: cho phép upload video
+  }
+});
+
+const uploadShort = multer({ storage: storageVideo });
+
 process.on("uncaughtException", (err) => console.error("🔥 Uncaught:", err));
 process.on("unhandledRejection", (err) => console.error("🔥 Unhandled:", err));
 
@@ -87,6 +109,39 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/stories", storyRoutes);
+// === SHORT VIDEO API ===
+
+// Tạo route upload short video
+app.post("/api/uploadShort", uploadShort.single("video"), async (req, res) => {
+  try {
+    const videoUrl = req.file.path; // Đường dẫn video Cloudinary
+    const { userId, description } = req.body;
+
+    // Lưu thông tin short vào MongoDB
+    const short = await Short.create({
+      userId,
+      videoUrl,
+      description,
+      createdAt: new Date()
+    });
+
+    res.status(201).json({ success: true, short });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi khi upload short video" });
+  }
+});
+
+// Lấy danh sách short video (mới nhất trước)
+app.get("/api/getShorts", async (req, res) => {
+  try {
+    const shorts = await Short.find().sort({ createdAt: -1 });
+    res.json(shorts);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi khi tải danh sách short" });
+  }
+});
 
 // ========== Socket.IO (with JWT auth) ==========
 const onlineUsers = new Map();
