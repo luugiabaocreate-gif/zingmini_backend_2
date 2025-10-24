@@ -59,14 +59,14 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     const newPost = new Post({
       user: req.user.id,
       content: req.body.content || "",
-      mediaUrl: req.file ? req.file.path : null,
+      image: req.file ? req.file.path : null,
     });
 
     await newPost.save();
     const populated = await newPost.populate("user", "name avatar");
     res.status(201).json(populated);
   } catch (err) {
-    console.error("🔥 Lỗi đăng bài:", err.message, err.stack);
+    console.error("🔥 Lỗi đăng bài:", err);
     res.status(500).json({ message: "Không thể đăng bài", error: err.message });
   }
 });
