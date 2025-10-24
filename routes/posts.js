@@ -34,41 +34,62 @@ router.get("/", async (req, res) => {
 });
 
 // Tạo bài đăng mới
-router.post("/", verifyToken, upload.single("file"), async (req, res) => {
-  console.log("📩 New post body:", req.body);
-  console.log("📎 Uploaded file:", req.file);
-  if (req.file) {
-    console.log("📸 File upload info:", {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      path: req.file.path,
-    });
+router.post(
+  "/",
+  verifyToken,
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      console.log("📩 Body:", req.body);
+      console.log("📎 Files:", req.files);
+
+      if (!req.user?.id)
+        return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
+
+      if (!req.body.content && !req.files)
+        return res.status(400).json({ message: "Thiếu nội dung hoặc file!" });
+
+      // ✅ Xác định loại file upload (ảnh / video / tài liệu)
+      const file =
+        req.files?.image?.[0] ||
+        req.files?.video?.[0] ||
+        req.files?.file?.[0] ||
+        null;
+        // ✅ Kiểm tra mimeType để xác định đúng loại
+let imageUrl = null;
+let videoUrl = null;
+
+if (file) {
+  if (file.mimetype.startsWith("video/")) {
+    videoUrl = file.path;
+  } else if (file.mimetype.startsWith("image/")) {
+    imageUrl = file.path;
   } else {
-    console.log("⚠️ Không có file upload");
+    imageUrl = file.path; // file khác: pdf, zip, ...
   }
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
+}
+
+      // ✅ Tạo bài đăng (nâng cấp: tách riêng ảnh / video)
+      const newPost = new Post({
+        user: req.user.id,
+        content: req.body.content || "",
+        image: imageUrl,
+        video: videoUrl,
+      });
+
+      await newPost.save();
+      const populated = await newPost.populate("user", "name avatar");
+      res.status(201).json(populated);
+    } catch (err) {
+      console.error("🔥 Lỗi đăng bài:", err);
+      res.status(500).json({ message: "Không thể đăng bài", error: err.message });
     }
-
-    if (!req.body.content && !req.file) {
-      return res.status(400).json({ message: "Thiếu nội dung hoặc file!" });
-    }
-
-    const newPost = new Post({
-      user: req.user.id,
-      content: req.body.content || "",
-      image: req.file ? req.file.path : null,
-    });
-
-    await newPost.save();
-    const populated = await newPost.populate("user", "name avatar");
-    res.status(201).json(populated);
-  } catch (err) {
-    console.error("🔥 Lỗi đăng bài:", err);
-    res.status(500).json({ message: "Không thể đăng bài", error: err.message });
   }
-});
+);
+
 
 export default router;
