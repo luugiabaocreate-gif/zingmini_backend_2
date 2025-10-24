@@ -59,19 +59,19 @@ router.post(
         req.files?.video?.[0] ||
         req.files?.file?.[0] ||
         null;
-        // ✅ Kiểm tra mimeType để xác định đúng loại
-let imageUrl = null;
-let videoUrl = null;
+      // ✅ Kiểm tra mimeType để xác định đúng loại
+      let imageUrl = null;
+      let videoUrl = null;
 
-if (file) {
-  if (file.mimetype.startsWith("video/")) {
-    videoUrl = file.path;
-  } else if (file.mimetype.startsWith("image/")) {
-    imageUrl = file.path;
-  } else {
-    imageUrl = file.path; // file khác: pdf, zip, ...
-  }
-}
+      if (file) {
+        if (file.mimetype.startsWith("video/")) {
+          videoUrl = file.path;
+        } else if (file.mimetype.startsWith("image/")) {
+          imageUrl = file.path;
+        } else {
+          imageUrl = file.path; // file khác: pdf, zip, ...
+        }
+      }
 
       // ✅ Tạo bài đăng (nâng cấp: tách riêng ảnh / video)
       const newPost = new Post({
@@ -86,10 +86,11 @@ if (file) {
       res.status(201).json(populated);
     } catch (err) {
       console.error("🔥 Lỗi đăng bài:", err);
-      res.status(500).json({ message: "Không thể đăng bài", error: err.message });
+      res
+        .status(500)
+        .json({ message: "Không thể đăng bài", error: err.message });
     }
   }
 );
-
 
 export default router;
