@@ -144,13 +144,15 @@ const short = await Short.create({
 // Lấy danh sách short video (mới nhất trước)
 app.get("/api/getShorts", async (req, res) => {
   try {
-    const shorts = await Short.find().sort({ createdAt: -1 });
+    // Populate nếu có ref tới User
+    const shorts = await Short.find()
+      .sort({ createdAt: -1 })
+      .populate("userId", "username avatar");
+
     res.json(shorts);
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Lỗi khi tải danh sách short" });
+    console.error("❌ Lỗi getShorts:", error);
+    res.status(500).json({ success: false, message: "Lỗi khi tải danh sách short" });
   }
 });
 
