@@ -19,18 +19,24 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 
+// ⚙️ Nạp biến môi trường TRƯỚC khi config Cloudinary
+dotenv.config();
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
 });
+
+// 🧪 Log kiểm tra khi khởi động server
+console.log("✅ Cloudinary ready for:", process.env.CLOUD_NAME);
 
 const storageVideo = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "zingmini_shorts",
-    resource_type: "video" // 👈 Quan trọng: cho phép upload video
-  }
+    resource_type: "video", // 👈 Quan trọng: cho phép upload video
+  },
 });
 
 const uploadShort = multer({ storage: storageVideo });
@@ -122,13 +128,15 @@ app.post("/api/uploadShort", uploadShort.single("video"), async (req, res) => {
       userId,
       videoUrl,
       description,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     res.status(201).json({ success: true, short });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Lỗi khi upload short video" });
+    res
+      .status(500)
+      .json({ success: false, message: "Lỗi khi upload short video" });
   }
 });
 
@@ -139,7 +147,9 @@ app.get("/api/getShorts", async (req, res) => {
     res.json(shorts);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Lỗi khi tải danh sách short" });
+    res
+      .status(500)
+      .json({ success: false, message: "Lỗi khi tải danh sách short" });
   }
 });
 
