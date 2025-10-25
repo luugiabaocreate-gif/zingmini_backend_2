@@ -123,14 +123,14 @@ app.post("/api/uploadShort", uploadShort.single("video"), async (req, res) => {
     const videoUrl = req.file.path; // Đường dẫn video Cloudinary
     const { userId, userName, userAvatar, description } = req.body;
 
-const short = await Short.create({
-  userId: userId || null,
-  userName: userName || "Người dùng",
-  userAvatar: userAvatar || "https://i.pravatar.cc/150?u=guest",
-  videoUrl,
-  description,
-  createdAt: new Date(),
-});
+    const short = await Short.create({
+      userId: userId || null,
+      userName: userName || "Người dùng",
+      userAvatar: userAvatar || "https://i.pravatar.cc/150?u=guest",
+      videoUrl,
+      description,
+      createdAt: new Date(),
+    });
 
     res.status(201).json({ success: true, short });
   } catch (error) {
@@ -152,7 +152,50 @@ app.get("/api/getShorts", async (req, res) => {
     res.json(shorts);
   } catch (error) {
     console.error("❌ Lỗi getShorts:", error);
-    res.status(500).json({ success: false, message: "Lỗi khi tải danh sách short" });
+    res
+      .status(500)
+      .json({ success: false, message: "Lỗi khi tải danh sách short" });
+  }
+});
+
+// ❤️ Like short
+app.post("/api/shorts/:id/like", async (req, res) => {
+  try {
+    const short = await Short.findById(req.params.id);
+    if (!short)
+      return res
+        .status(404)
+        .json({ success: false, message: "Short không tồn tại" });
+
+    short.likes = (short.likes || 0) + 1;
+    await short.save();
+
+    io.emit("short-liked", { id: short._id, likes: short.likes });
+    res.json({ success: true, likes: short.likes });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Lỗi khi like short" });
+  }
+});
+
+// 💬 Comment short
+app.post("/api/shorts/:id/comment", async (req, res) => {
+  try {
+    const { text, userId } = req.body;
+    const short = await Short.findById(req.params.id);
+    if (!short)
+      return res
+        .status(404)
+        .json({ success: false, message: "Short không tồn tại" });
+
+    short.comments.push({ user: userId, text });
+    await short.save();
+
+    io.emit("short-commented", { id: short._id, text, userId });
+    res.json({ success: true });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Lỗi khi bình luận short" });
   }
 });
 
