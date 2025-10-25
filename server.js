@@ -121,15 +121,16 @@ app.use("/api/stories", storyRoutes);
 app.post("/api/uploadShort", uploadShort.single("video"), async (req, res) => {
   try {
     const videoUrl = req.file.path; // Đường dẫn video Cloudinary
-    const { userId, description } = req.body;
+    const { userId, userName, userAvatar, description } = req.body;
 
-    // Lưu thông tin short vào MongoDB
-    const short = await Short.create({
-      userId,
-      videoUrl,
-      description,
-      createdAt: new Date(),
-    });
+const short = await Short.create({
+  userId: userId || null,
+  userName: userName || "Người dùng",
+  userAvatar: userAvatar || "https://i.pravatar.cc/150?u=guest",
+  videoUrl,
+  description,
+  createdAt: new Date(),
+});
 
     res.status(201).json({ success: true, short });
   } catch (error) {
