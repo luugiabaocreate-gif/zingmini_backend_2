@@ -14,18 +14,17 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-// ====================== UPLOAD CONFIG (Cloudinary) ======================
 const storage = new CloudinaryStorage({
   cloudinary,
   params: (req, file) => ({
-    folder: "zingmini_posts",
+    folder: "zingmini_uploads",
     resource_type: file.mimetype.startsWith("video/") ? "video" : "image",
   }),
 });
 
 const upload = multer({ storage });
 
-// ====================== LẤY TẤT CẢ BÀI ĐĂNG ======================
+// Lấy tất cả bài đăng
 router.get("/", async (req, res) => {
   try {
     const posts = await Post.find()
@@ -33,55 +32,68 @@ router.get("/", async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {
-    console.error("❌ Lỗi khi tải bài viết:", err);
     res.status(500).json({ message: "Lỗi khi tải bài viết" });
   }
 });
 
-// ====================== TẠO BÀI ĐĂNG MỚI ======================
-router.post("/", verifyToken, upload.single("media"), async (req, res) => {
-  try {
-    console.log("📩 Body:", req.body);
-    console.log("📎 File:", req.file);
+// Tạo bài đăng mới
+router.post(
+  "/",
+  verifyToken,
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      console.log("📩 Body:", req.body);
+      console.log("📎 Files:", req.files);
 
-    if (!req.user?.id) {
-      return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
-    }
+      if (!req.user?.id)
+        return res.status(401).json({ message: "Thiếu token hoặc token sai!" });
 
-    if (!req.body.content && !req.file) {
-      return res.status(400).json({ message: "Thiếu nội dung hoặc file!" });
-    }
+      if (!req.body.content && !req.files)
+        return res.status(400).json({ message: "Thiếu nội dung hoặc file!" });
 
-    const file = req.file || {};
-    let imageUrl = null;
-    let videoUrl = null;
+      // ✅ Xác định loại file upload (ảnh / video / tài liệu)
+      const file =
+        req.files?.image?.[0] ||
+        req.files?.video?.[0] ||
+        req.files?.file?.[0] ||
+        null;
+      // ✅ Kiểm tra mimeType để xác định đúng loại
+      let imageUrl = null;
+      let videoUrl = null;
 
-    if (file && file.mimetype) {
-      if (file.mimetype.startsWith("video/")) {
-        videoUrl = file.path;
-      } else if (file.mimetype.startsWith("image/")) {
-        imageUrl = file.path;
-      } else {
-        // file khác: pdf, docx, zip...
-        imageUrl = file.path;
+      if (file) {
+        if (file.mimetype.startsWith("video/")) {
+          videoUrl = file.path;
+        } else if (file.mimetype.startsWith("image/")) {
+          imageUrl = file.path;
+        } else {
+          imageUrl = file.path; // file khác: pdf, zip, ...
+        }
       }
+
+      // ✅ Tạo bài đăng (nâng cấp: tách riêng ảnh / video)
+      const newPost = new Post({
+        user: req.user.id,
+        content: req.body.content || "",
+        image: imageUrl,
+        video: videoUrl,
+      });
+
+      await newPost.save();
+      const populated = await newPost.populate("user", "name avatar");
+      res.status(201).json(populated);
+    } catch (err) {
+      console.error("🔥 Lỗi đăng bài:", err);
+      res
+        .status(500)
+        .json({ message: "Không thể đăng bài", error: err.message });
     }
-
-    const newPost = new Post({
-      user: req.user.id,
-      content: req.body.content || "",
-      image: imageUrl,
-      video: videoUrl,
-      createdAt: new Date(),
-    });
-
-    await newPost.save();
-    const populated = await newPost.populate("user", "name avatar");
-    res.status(201).json(populated);
-  } catch (err) {
-    console.error("🔥 Lỗi đăng bài:", err);
-    res.status(500).json({ message: "Không thể đăng bài", error: err.message });
   }
-});
+);
 
 export default router;
