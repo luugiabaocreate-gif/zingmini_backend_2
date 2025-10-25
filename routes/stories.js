@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // === POST /api/stories ===
-router.post("/", verifyToken, upload.single("file"), async (req, res) => {
+router.post("/", verifyToken, upload.single("story"), async (req, res) => {
   console.log("🎬 Story upload body:", req.body);
   console.log("🎞 Uploaded story file:", req.file);
 

@@ -16,7 +16,10 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: { folder: "zingmini_uploads" },
+  params: (req, file) => ({
+    folder: "zingmini_uploads",
+    resource_type: file.mimetype.startsWith("video/") ? "video" : "image",
+  }),
 });
 
 const upload = multer({ storage });
