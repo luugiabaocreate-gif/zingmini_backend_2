@@ -1,21 +1,29 @@
 import express from "express";
+import multer from "multer";
 import { verifyToken } from "../middleware/auth.js";
 import Story from "../models/Story.js";
-import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import { cloudinary } from "../utils/cloudinary.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const router = express.Router();
 
-// === Cấu hình Cloudinary upload ===
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: (req, file) => ({
-    folder: "zingmini_stories",
-    resource_type: file.mimetype.startsWith("video/") ? "video" : "image",
-  }),
-});
+// === Tạo thư mục uploads/stories tuyệt đối theo __dirname ===
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadBase = path.join(__dirname, "../uploads/stories");
+if (!fs.existsSync(uploadBase)) fs.mkdirSync(uploadBase, { recursive: true });
 
+// === Multer config ===
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadBase);
+  },
+  filename: (req, file, cb) => {
+    const unique = Date.now() + "_" + file.originalname;
+    cb(null, unique);
+  },
+});
 const upload = multer({ storage });
 
 // === POST /api/stories ===
@@ -29,14 +37,14 @@ router.post("/", verifyToken, upload.single("story"), async (req, res) => {
     }
 
     const isVideo = req.file.mimetype.startsWith("video");
-    const fileUrl = req.file.path; // ✅ Cloudinary URL thật
+    const fileUrl = `/uploads/stories/${req.file.filename}`;
 
     const story = await Story.create({
       userId: req.user.id,
       mediaUrl: fileUrl,
       type: isVideo ? "video" : "image",
       createdAt: new Date(),
-      expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // hết hạn sau 24h
     });
 
     console.log("✅ Story created:", story);
