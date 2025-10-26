@@ -96,4 +96,24 @@ router.post(
   }
 );
 
+// === DELETE /api/posts/:id ===
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post)
+      return res.status(404).json({ message: "Bài viết không tồn tại" });
+    if (post.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Không có quyền xóa bài này" });
+    }
+
+    await post.deleteOne();
+    res.json({ success: true, message: "Đã xóa bài viết" });
+  } catch (err) {
+    console.error("🔥 Lỗi khi xóa post:", err);
+    res
+      .status(500)
+      .json({ message: "Không thể xóa bài viết", error: err.message });
+  }
+});
+
 export default router;

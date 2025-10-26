@@ -91,4 +91,23 @@ router.get("/", async (req, res) => {
   }
 });
 
+// === DELETE /api/stories/:id ===
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ message: "Story không tồn tại" });
+    if (story.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Không có quyền xóa story này" });
+    }
+
+    await story.deleteOne();
+    res.json({ success: true, message: "Đã xóa story" });
+  } catch (err) {
+    console.error("🔥 Lỗi khi xóa story:", err);
+    res
+      .status(500)
+      .json({ message: "Không thể xóa story", error: err.message });
+  }
+});
+
 export default router;
