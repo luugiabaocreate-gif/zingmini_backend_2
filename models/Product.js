@@ -8,7 +8,11 @@ const productSchema = new mongoose.Schema(
     image: String,
     stock: { type: Number, default: 0 },
     category: { type: String, default: "Khác" },
-    seller: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
+    seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    }, // 👈 sửa "Seller" thành "User"
   },
   { timestamps: true }
 );
