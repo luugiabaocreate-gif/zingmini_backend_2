@@ -14,6 +14,10 @@ import messageRoutes from "./routes/messageRoutes.js";
 import commentRoutes from "./routes/comments.js";
 import uploadRoutes from "./routes/upload.js";
 import storyRoutes from "./routes/stories.js";
+// === ZING SHOP ROUTES ===
+import productRoutes from "./routes/productRoutes.js";
+import sellerRoutes from "./routes/sellerRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 // === VIDEO STORAGE FOR SHORTS ===
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
@@ -115,6 +119,9 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/stories", storyRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/sellers", sellerRoutes);
+app.use("/api/orders", orderRoutes);
 // === SHORT VIDEO API ===
 
 // Tạo route upload short video
