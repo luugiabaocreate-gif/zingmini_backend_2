@@ -64,6 +64,7 @@ const io = new Server(server, {
 const allowedOrigins = [
   "https://zingmini-frontend-2.onrender.com",
   "https://zingmini-home-yb1p.onrender.com",
+  "https://zingmini-home-up.onrender.com",
   "http://localhost:5500",
   "http://127.0.0.1:5500",
 ];
